@@ -13,6 +13,6 @@
     "jsx": "react-jsx",
     "strict": true
   },
-  "include": ["src", "vitest.config.ts"],
+  "include": ["src/**/*", "vitest.config.ts", "env.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
