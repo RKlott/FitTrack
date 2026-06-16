@@ -16,6 +16,15 @@ export default defineConfig({
       port: 3000,
       // Port du serveur de développement Vite
 
+      watch: { // Force vite à garder l'oeil ouvert sur les modifications front
+      usePolling: true,
+      interval: 100, // Vérifie les changements toutes les 100ms
+    },
+
+      hmr: {
+      clientPort: 80, // Dit à Vite d'envoyer le signal de reload via le port 80 de Nginx
+    },
+
       proxy: {
         '/api': {
           target: 'http://backend:5000',
@@ -24,6 +33,7 @@ export default defineConfig({
           changeOrigin: true,
           // Nécessaire pour que le header Host soit correct
         },
+        
       },
     },
   })

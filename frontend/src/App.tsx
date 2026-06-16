@@ -10,7 +10,7 @@ function App() {
         <div>
           <h1>Get started</h1>
           <p className='text-amber-300'>
-            Edit <code>src/App.tsx</code> and saaaave to test <code>HMR</code>
+            Edit <code>src/App.tsx</code> and Save to test <code>HMR</code>
           </p>
         </div>
         <button
