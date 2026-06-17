@@ -1,102 +1,117 @@
 // ============================================================
-// context/AuthContext.tsx — Contexte d'authentification React
+// context/AuthProvider.tsx — Composant Provider d'authentification
 //
-// Le Context API de React permet de partager des données entre composants
-// sans passer par les props à chaque niveau (prop drilling).
-// Ici, il expose l'utilisateur connecté et les fonctions login/register/logout
-// à n'importe quel composant de l'arbre, via le hook useAuth.
+// Ce fichier contient uniquement le composant AuthProvider.
+// Il gère l'état d'authentification global de l'application FitTrack
+// et injecte les méthodes de connexion/déconnexion via le Context.
 // ============================================================
 
-import { createContext, useState, useEffect, ReactNode } from 'react'
+import { useState, useEffect, ReactNode } from 'react'
 import api from '../services/api'
+import { AuthContext, RegisterData } from './AuthContext'
 import { User } from '../types'
 
-// ---- Types TypeScript ----
-// Interface décrivant les données que le contexte expose
-interface RegisterData {
-  username: string
-  email: string
-  password: string
-  weight?: number   // ? = optionnel en TypeScript
-  goal?: string
-}
-
-export interface AuthContextType {
-  user: User | null   // null = non connecté
-  loading: boolean    // true pendant la vérification initiale du token
-  login: (email: string, password: string) => Promise<void>
-  register: (data: RegisterData) => Promise<void>
-  logout: () => void
-}
-
-// ---- Création du contexte ----
-// createContext(null) : valeur par défaut = null (sans Provider)
-// Le type générique <AuthContextType | null> permet à TypeScript de savoir
-// ce que contient le contexte (null = en dehors du Provider)
-export const AuthContext = createContext<AuthContextType | null>(null);
-
-// ============================================================
-// AuthProvider — Composant qui enveloppe l'application
-// ============================================================
-// { children } : les composants enfants à rendre (toute l'app dans App.tsx)
-// ReactNode : type TypeScript pour n'importe quel contenu React rendable
 export function AuthProvider({ children }: { children: ReactNode }) {
-    // user : l'utilisateur connecté, null si non authentifié
-    const [user, setUser] = useState<User | null>(null)
+  //  * == État global : Gestion de l'utilisateur connecté == *
+  const [user, setUser] = useState<User | null>(null)
+  
+  // ! Alerte : loading empêche l'affichage flash de l'application avant la vérification du token !
+  const [loading, setLoading] = useState(true)
 
-    // loading : empêche d'afficher une page avant de savoir si l'user est connecté
-  // Évite le "flash" de la page login avant la redirection vers le dashboard
-    const [loading, setLoading] = useState(true)
+  // ---- Vérification asynchrone du token au démarrage ----
+  // useEffect(() => {
+  //   // * Logique métier : Isolation de la vérification dans une fonction dédiée *
+  //   const initializeAuth = async () => {
+  //     // ? Lecture : Récupération du token potentiel stocké dans le localStorage ?
+  //     const token = localStorage.getItem('token')
+      
+  //     if (token) {
+  //       try {
+  //         // ? Requêtage : GET /api/auth/me pour vérifier la validité du token ?
+  //         const res = await api.get('/auth/me')
+  //         // * Action : Hydratation de l'utilisateur si le token est valide *
+  //         setUser(res.data.user)
+  //       } catch {
+  //         // ! Sécurité : Si l'API renvoie une erreur, le token est corrompu ou expiré -> Nettoyage !
+  //         localStorage.removeItem('token')
+  //       }
+  //     }
+      
+  //     // * Action : Clôture du chargement de manière asynchrone après les vérifications *
+  //     setLoading(false)
+  //   }
 
-    // ---- Vérification du token au démarrage de l'app ----
-  // useEffect avec [] en dépendance = s'exécute une seule fois au montage
-  // Si un token est déjà stocké (session précédente), on vérifie sa validité
-useEffect(() => {
-    const token = localStorage.getItem('token')
-    if (token) {
-      // GET /api/auth/me : retourne le profil si le token est valide
-      api
-        .get('/auth/me')
-        .then((res) => setUser(res.data.user))
-        // Si le token est expiré, l'intercepteur axios le supprime (voir api.ts)
-        .catch(() => localStorage.removeItem('token'))
-        .finally(() => setLoading(false)) // Fin du chargement dans tous les cas
-    } else {
-      setLoading(false) // Pas de token → on sait déjà qu'il n'est pas connecté
-    }
-  }, [])
+  //   initializeAuth()
+  // }, [])
 
+  useEffect(() => {
+        const token = localStorage.getItem('token')
+        if (token) {
+            api.get('/auth/me')
+                .then((res) => setUser(res.data.user))
+                .catch(() => localStorage.removeItem('token'))
+                .finally(() => setLoading(false))
+        }
+    }, [])
+
+  // useEffect(() => {
+  //   const token = localStorage.getItem('token')
+
+  //   if (token) {
+
+  //     // GET /api/auth/me : retourne le profil si le token est valide
+  //     api
+  //       .get('/auth/me')
+  //       .then((res) => setUser(res.data.user))
+
+  //       // Si le token est expiré, l'intercepteur axios le supprime
+  //       .catch(() => localStorage.removeItem('token'))
+
+  //       .finally(() => setLoading(false)) // Fin du chargement dans tous les cas
+
+  //   } else {
+  //     setLoading(false) // Pas de token → on sait déjà qu'il n'est pas connecté
+  //   }
+
+  // }, [])
+
+    
   // ---- Login ----
-  // async/await : on attend la réponse avant de continuer
-  // Lance une exception si la requête échoue (catch géré dans le composant Login)
   const login = async (email: string, password: string) => {
+    // ? Requêtage : Envoi des identifiants ?
     const res = await api.post('/auth/login', { email, password })
-    localStorage.setItem('token', res.data.token) // Persiste le token entre les sessions
-    setUser(res.data.user)                        // Met à jour l'état global
+    // ! Sécurité : Stockage persistant du nouveau token JWT !
+    localStorage.setItem('token', res.data.token) 
+    // * Action : Mise à jour de l'état utilisateur *
+    setUser(res.data.user)                        
   }
 
   // ---- Register ----
-  // Même logique que login : le backend crée le compte ET retourne un token
   const register = async (data: RegisterData) => {
+    // ? Requêtage : Envoi des données d'inscription ?
     const res = await api.post('/auth/register', data)
+    // ! Sécurité : Stockage direct du token généré suite à l'inscription !
     localStorage.setItem('token', res.data.token)
+    // * Action : Connexion automatique de l'utilisateur *
     setUser(res.data.user)
   }
 
   // ---- Logout ----
-  // Côté client : on supprime le token et on vide l'état
-  // Côté serveur : les JWT sont stateless (pas de session à invalider)
   const logout = () => {
+    // ! Sécurité : Invalidation du token côté client par suppression complète !
     localStorage.removeItem('token')
-    setUser(null) // React re-rend les composants → PrivateRoute redirige vers /login
+    // * Action : Remise à zéro de l'état (provoque la redirection via les routes privées) *
+    setUser(null) 
   }
 
   // ---- Rendu du Provider ----
-  // AuthContext.Provider rend les valeurs accessibles à tous les composants enfants
-  // via useContext(AuthContext) ou le hook useAuth (hooks/useAuth.ts)
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   )
 }
+
+// ============================================================
+// Fin du fichier context/AuthProvider.tsx
+// ============================================================
