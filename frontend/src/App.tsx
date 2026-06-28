@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext.tsx';
 import PrivateRoute from './components/PrivateRoute';
 import Layout from './components/Layout/Layout';
 import Login from './pages/Login';
@@ -38,7 +38,7 @@ export default function App(){
             <Route element={<PrivateRoute />}>
               <Route element={<Layout/>}>
                 <Route path="/dashboard" element={<Dashboard />}/>
-                <Route path="/exercices" element={<Exercises />}/>
+                <Route path="/exercises" element={<Exercises />}/>
                 <Route path="/workouts" element={<Workouts />}/>
                 {/* :id = paramètre dynamique récupéré avec useParams() dans WorkoutDetail */}
                 <Route path="/workouts/:id" element={<WorkoutDetail />}/>
