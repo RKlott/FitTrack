@@ -14,8 +14,9 @@ import axios from 'axios'
 // Ex : api.get('/auth/me') envoie GET /api/auth/me
 // Le proxy Vite (vite.config.ts) redirige /api → http://backend:5000
 const api = axios.create({
-  baseURL: '/api',
-})
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+});
+
 
 // ============================================================
 // INTERCEPTEUR DE REQUÊTE (avant envoi)
